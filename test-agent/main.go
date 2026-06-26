@@ -2,10 +2,20 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 )
+
+// Free-tier capable models: gemini-2.5-flash, gemini-2.5-flash-lite.
+// (Pro models require billing.)
+const model = "gemini-2.5-flash"
+
+const apiBase = "https://generativelanguage.googleapis.com/v1beta/models/"
 
 func main() {
 	apiKey := os.Getenv("GEMINI_API_KEY")
@@ -61,9 +71,38 @@ func (a *Agent) Run(ctx context.Context) error {
 }
 
 func (a *Agent) Infer(ctx context.Context, conversation []Content) (Content, error) {
+	body, err := json.Marshal(Request{
+		Contents: conversation,
+	})
+	if err != nil {
+		return Content{}, err
+	}
+	url := apiBase + model + ":generateContent"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return Content{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-goog-api-key", a.apiKey)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return Content{}, err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return Content{}, err
+	}
+	fmt.Println(string(raw))
+	var response Response
+	if err := json.Unmarshal(raw, &response); err != nil {
+		return Content{}, err
+	}
+
+	actualContent := "will do!"
 	return Content{
 		Role:  "model",
-		Parts: []Part{{Text: "will do !"}},
+		Parts: []Part{{Text: actualContent}},
 	}, nil
 }
 
@@ -74,4 +113,11 @@ type Content struct {
 
 type Part struct {
 	Text string `json:"text,omitempty"`
+}
+
+type Request struct {
+	Contents []Content `json:"contents"`
+}
+
+type Response struct {
 }
