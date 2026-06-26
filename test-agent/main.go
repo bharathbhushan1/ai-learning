@@ -93,17 +93,30 @@ func (a *Agent) Infer(ctx context.Context, conversation []Content) (Content, err
 	if err != nil {
 		return Content{}, err
 	}
-	fmt.Println(string(raw))
+
 	var response Response
 	if err := json.Unmarshal(raw, &response); err != nil {
 		return Content{}, err
 	}
+	if response.Error != nil {
+		return Content{}, fmt.Errorf("gemini error %d (%s): %s",
+			response.Error.Code, response.Error.Status, response.Error.Message)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return Content{}, fmt.Errorf("gemini returned %d: %s", resp.StatusCode, string(raw))
+	}
+	if len(response.Candidates) == 0 {
+		return Content{}, fmt.Errorf("no candidates returned: %s", string(raw))
+	}
 
-	actualContent := "will do!"
-	return Content{
-		Role:  "model",
-		Parts: []Part{{Text: actualContent}},
-	}, nil
+	// b, _ := json.MarshalIndent(response, "", "  ")
+	// fmt.Println(string(b))
+
+	c := response.Candidates[0].Content
+	if c.Role == "" {
+		c.Role = "model"
+	}
+	return c, nil
 }
 
 type Content struct {
@@ -120,4 +133,18 @@ type Request struct {
 }
 
 type Response struct {
+	Candidates []struct {
+		Content      Content `json:"content"`
+		FinishReason string  `json:"finishReason"`
+	} `json:"candidates"`
+
+	UsageMetadata struct {
+		TotalTokenCount int `json:"totalTokenCount"`
+	} `json:"usageMetadata"`
+
+	Error *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Status  string `json:"status"`
+	} `json:"error,omitempty"`
 }
