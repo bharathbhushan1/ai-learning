@@ -2,7 +2,7 @@
 
 A minimal Go skeleton for a CLI-based agent that reads user input from stdin.
 
-## main.go
+## test-agent/main.go
 
 - `Agent` struct holds an `apiKey` and a `getUserMessage` callback (`func() (string, bool)`).
 - `NewAgent(apiKey, getUserMessage)` constructs an `Agent`.
@@ -16,3 +16,4 @@ This is currently a scaffold: input is read once and echoed back, with no real a
 - `6f5e1ed` — Add initial Go agent skeleton (main.go, go.mod)
 - `eb92cd0` — Add README documenting main.go and a commit changelog
 - `6e22698` — Make Agent.Run return an error and handle it in main
+- Move Go sources into `test-agent/`
