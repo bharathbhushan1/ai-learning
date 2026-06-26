@@ -15,7 +15,9 @@ func main() {
 		return scanner.Text(), true
 	}
 	agent := NewAgent("test", getUserMessage)
-	agent.Run()
+	if err := agent.Run(); err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+	}
 }
 
 type Agent struct {
@@ -27,7 +29,8 @@ func NewAgent(apiKey string, getUserMessage func() (string, bool)) *Agent {
 	return &Agent{apiKey: apiKey, getUserMessage: getUserMessage}
 }
 
-func (a *Agent) Run() {
+func (a *Agent) Run() error {
 	fmt.Println("Agent: Sudarshana:> ")
 	fmt.Println(a.getUserMessage())
+	return nil
 }
