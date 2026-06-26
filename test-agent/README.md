@@ -1,6 +1,6 @@
 # agent
 
-A minimal Go skeleton for a CLI-based agent that reads user input from stdin.
+A minimal Go skeleton for a CLI-based agent that reads user input from stdin. Based on https://ampcode.com/notes/how-to-build-an-agent. 
 
 ## test-agent/main.go
 
