@@ -1,3 +1,4 @@
+// This file contains functions for editing files.
 package main
 
 import (

@@ -89,7 +89,10 @@ func (a *Agent) Run(ctx context.Context) error {
 		} else {
 			readUserInput = false
 			conversation = append(conversation, Content{
-				Role:  "function",
+				// Gemini's REST API only accepts the roles "user" and "model".
+				// Function results are sent back in a "user" turn (each part
+				// carrying a functionResponse), not a dedicated "function" role.
+				Role:  "user",
 				Parts: functionResponses,
 			})
 		}
@@ -189,9 +192,6 @@ func (a *Agent) Infer(ctx context.Context, conversation []Content) (Content, err
 	if len(response.Candidates) == 0 {
 		return Content{}, fmt.Errorf("no candidates returned: %s", string(raw))
 	}
-
-	// b, _ := json.MarshalIndent(response, "", "  ")
-	// fmt.Println(string(b))
 
 	c := response.Candidates[0].Content
 	if c.Role == "" {

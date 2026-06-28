@@ -1,3 +1,4 @@
+// This file contains functions for listing files.
 package main
 
 import (
