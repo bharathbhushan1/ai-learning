@@ -51,37 +51,65 @@ func NewAgent(apiKey string, getUserMessage func() (string, bool), tools []ToolD
 
 func (a *Agent) Run(ctx context.Context) error {
 	conversation := []Content{}
+	readUserInput := true
 
 	fmt.Println("Agent: Sudarshana ☸️ :> ")
 	for {
-		fmt.Print("[94mYou[0m: ")
-		userInput, ok := a.getUserMessage()
-		if !ok {
-			break
+		if readUserInput {
+			fmt.Print("[94mYou[0m: ")
+			userInput, ok := a.getUserMessage()
+			if !ok {
+				break
+			}
+			conversation = append(conversation, Content{
+				Role:  "user",
+				Parts: []Part{{Text: userInput}},
+			})
 		}
-		conversation = append(conversation, Content{
-			Role:  "user",
-			Parts: []Part{{Text: userInput}},
-		})
 		modelOutput, err := a.Infer(ctx, conversation)
 		if err != nil {
 			return err
 		}
 		conversation = append(conversation, modelOutput)
 		fmt.Println(conversation)
+
+		var functionResponses []Part
 		for _, p := range modelOutput.Parts {
 			if strings.TrimSpace(p.Text) != "" {
-				fmt.Printf("[93m%s[0m: %s\n\n", model, p.Text)
+				fmt.Printf("> [93m%s[0m: %s\n\n", model, p.Text)
 			}
 			if p.FunctionCall != nil {
-				fmt.Println(p.FunctionCall.Name + "()")
+				fmt.Println("🔧 Calling " + p.FunctionCall.Name + "()")
+				result := a.executeTool(p.FunctionCall.Name, p.FunctionCall.Args)
+				functionResponses = append(functionResponses, result)
 			}
+		}
+
+		if len(functionResponses) == 0 {
+			readUserInput = true
+		} else {
+			readUserInput = false
+			conversation = append(conversation, Content{
+				Role:  "function",
+				Parts: functionResponses,
+			})
 		}
 	}
 	return nil
 }
 
+func (a *Agent) executeTool(name string, _ json.RawMessage) Part {
+	return Part{
+		FunctionResponse: &FunctionResponse{
+			Name:     name,
+			Response: map[string]any{"result": "hello, world!"},
+		},
+	}
+
+}
+
 func (a *Agent) Infer(ctx context.Context, conversation []Content) (Content, error) {
+	fmt.Println("🧠 Calling LLM")
 	functionDeclarations := make([]FunctionDeclaration, 0, len(a.tools))
 	for _, t := range a.tools {
 		functionDeclarations = append(functionDeclarations, FunctionDeclaration{
