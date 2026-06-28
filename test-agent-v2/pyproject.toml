@@ -1,0 +1,12 @@
+[project]
+name = "test-agent-v2"
+version = "0.1.0"
+description = "A minimal CLI agent targeting the Sarvam API (Python port of test-agent)."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27",
+]
+
+[tool.uv]
+package = false
