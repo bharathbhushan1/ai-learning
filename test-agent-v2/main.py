@@ -139,6 +139,11 @@ class Agent:
         }
 
         print(f"➡ \033[92m\033[0m: LLM call")
+        # The endpoint is stateless: the system prompt and full tool set are part
+        # of this request body on *every* call, not just the first. Set DEBUG=1 to
+        # print the actual request each turn. (Gated so it doesn't clutter runs.)
+        if os.getenv("DEBUG"):
+            self._log_request(body)
         resp = self.client.post(
             API_URL,
             headers={
@@ -165,9 +170,64 @@ class Agent:
         if not choices:
             raise RuntimeError(f"no choices returned: {resp.text}")
 
+        self._log_usage(data.get("usage") or {})
+
         message = choices[0]["message"]
         message.setdefault("role", "assistant")
         return message
+
+    @staticmethod
+    def _log_request(body: dict[str, Any]) -> None:
+        """Pretty-print the actual request body going to the LLM.
+
+        Renders each message as `[role] content` and lists the advertised tools,
+        so it's obvious that the system prompt + full tool set ride along on every
+        call. Long content is trimmed (with the original length shown) to keep the
+        dump readable rather than faithful to the last byte.
+        """
+        dim, reset = "\033[90m", "\033[0m"
+
+        def trim(text: str, limit: int = 300) -> str:
+            text = text.replace("\n", " ")
+            if len(text) <= limit:
+                return text
+            return f"{text[:limit]}… (+{len(text) - limit} more chars)"
+
+        messages = body.get("messages") or []
+        tools = body.get("tools") or []
+        print(f"{dim}  ⇡ Request to {body.get('model')}:{reset}")
+        print(f"{dim}    messages ({len(messages)}):{reset}")
+        for msg in messages:
+            role = msg.get("role", "?")
+            content = msg.get("content")
+            if content:
+                print(f"{dim}      [{role:9}] {trim(content)}{reset}")
+            else:
+                print(f"{dim}      [{role:9}] (no text content){reset}")
+            # Surface the structured bits a plain `content` print would hide.
+            for call in msg.get("tool_calls") or []:
+                fn = call.get("function", {})
+                print(
+                    f"{dim}                  → tool_call {fn.get('name')}"
+                    f"({trim(fn.get('arguments') or '', 120)}){reset}"
+                )
+            if msg.get("tool_call_id"):
+                print(
+                    f"{dim}                  ↳ result for {msg['tool_call_id']}{reset}"
+                )
+        tool_names = ", ".join(t["function"]["name"] for t in tools)
+        print(f"{dim}    tools ({len(tools)}): {tool_names}{reset}")
+
+    @staticmethod
+    def _log_usage(usage: dict[str, Any]) -> None:
+        if not usage:
+            return
+        prompt_tokens = usage.get("prompt_tokens", 0)
+        completion_tokens = usage.get("completion_tokens", 0)
+        print(
+            f"  \033[90m← usage: prompt={prompt_tokens} "
+            f"completion={completion_tokens}\033[0m"
+        )
 
 
 def main() -> None:

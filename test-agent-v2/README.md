@@ -61,7 +61,10 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
     `arguments`, runs it, and returns a `tool` message carrying the result (or
     an `{"error": …}` payload on failure / unknown tool). It echoes each tool
     call, its result (or error), and every LLM call to the console for easier
-    debugging.
+    debugging. It also logs per-call token `usage` (`prompt`/`completion`), and
+    — under `DEBUG=1` — pretty-prints the actual request body (every message
+    plus the advertised tools), which makes it obvious that this stateless
+    endpoint re-sends the system prompt and full tool set on every call.
 - `tool.py` — the `ToolDefinition` dataclass (`name`, `description`,
   JSON-schema `input_schema`, and a `function(args: dict) -> str`).
 - `tool_read_file.py` — `read_file`: returns the contents of a relative path.
@@ -106,3 +109,6 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
   (off by default): the dedicated model is ~100x pricier per character than
   inline chat translation, so opt in only when its quality/controls are worth
   it. The translation system prompt is applied only when the tool is enabled.
+- `2026-06-28` — Log per-call token `usage` (`prompt`/`completion`) and, under
+  `DEBUG=1`, pretty-print the actual request body each turn — showing that the
+  stateless endpoint re-sends the system prompt and full tool set on every call.
