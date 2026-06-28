@@ -86,7 +86,7 @@ class Agent:
         if tool is None:
             return self._tool_result(call_id, {"error": f"tool not found: {name}"})
 
-        print(f"➡ \033[92m{name}\033[0m: {args_str}\n")
+        print(f"➡ \033[92m{name}\033[0m: {args_str}")
         try:
             args = json.loads(args_str)
         except json.JSONDecodeError:
@@ -95,8 +95,11 @@ class Agent:
         try:
             output = tool.function(args)
         except Exception as e:  # noqa: BLE001 - surface any tool failure to the model
+            print(f"  \033[91m✗\033[0m {name}: {e}")
             return self._tool_result(call_id, {"error": str(e)})
 
+        # Echo what the tool fed back to the model so retries aren't a black box.
+        print(f"  \033[90m← {output}\033[0m")
         return {"role": "tool", "tool_call_id": call_id, "content": output}
 
     @staticmethod
@@ -122,6 +125,7 @@ class Agent:
             "tools": tools,
         }
 
+        print(f"➡ \033[92m\033[0m: LLM call")
         resp = self.client.post(
             API_URL,
             headers={

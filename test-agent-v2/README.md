@@ -57,7 +57,9 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
     choice's assistant `message`.
   - `Agent.execute_tool()` looks up the named tool, parses its JSON
     `arguments`, runs it, and returns a `tool` message carrying the result (or
-    an `{"error": …}` payload on failure / unknown tool).
+    an `{"error": …}` payload on failure / unknown tool). It echoes each tool
+    call, its result (or error), and every LLM call to the console for easier
+    debugging.
 - `tool.py` — the `ToolDefinition` dataclass (`name`, `description`,
   JSON-schema `input_schema`, and a `function(args: dict) -> str`).
 - `tool_read_file.py` — `read_file`: returns the contents of a relative path.
@@ -86,3 +88,5 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
 - `2026-06-28` — Seed a system prompt so translation requests go through the
   `translate` tool and its `translated_text` is reported verbatim rather than
   paraphrased.
+- `2026-06-28` — Log each tool call, its result (or error), and every LLM call
+  to the console for easier debugging.
