@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 // Free-tier capable models: gemini-2.5-flash, gemini-2.5-flash-lite.
@@ -31,7 +32,8 @@ func main() {
 		}
 		return scanner.Text(), true
 	}
-	agent := NewAgent(apiKey, getUserMessage)
+	tools := []ToolDefinition{ReadFileTool}
+	agent := NewAgent(apiKey, getUserMessage, tools)
 	if err := agent.Run(context.TODO()); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
 	}
@@ -40,16 +42,17 @@ func main() {
 type Agent struct {
 	apiKey         string
 	getUserMessage func() (string, bool)
+	tools          []ToolDefinition
 }
 
-func NewAgent(apiKey string, getUserMessage func() (string, bool)) *Agent {
-	return &Agent{apiKey: apiKey, getUserMessage: getUserMessage}
+func NewAgent(apiKey string, getUserMessage func() (string, bool), tools []ToolDefinition) *Agent {
+	return &Agent{apiKey: apiKey, getUserMessage: getUserMessage, tools: tools}
 }
 
 func (a *Agent) Run(ctx context.Context) error {
 	conversation := []Content{}
 
-	fmt.Println("Agent: Sudarshana:> ")
+	fmt.Println("Agent: Sudarshana ☸️ :> ")
 	for {
 		fmt.Print("[94mYou[0m: ")
 		userInput, ok := a.getUserMessage()
@@ -66,13 +69,31 @@ func (a *Agent) Run(ctx context.Context) error {
 		}
 		conversation = append(conversation, modelOutput)
 		fmt.Println(conversation)
+		for _, p := range modelOutput.Parts {
+			if strings.TrimSpace(p.Text) != "" {
+				fmt.Printf("[93m%s[0m: %s\n\n", model, p.Text)
+			}
+			if p.FunctionCall != nil {
+				fmt.Println(p.FunctionCall.Name + "()")
+			}
+		}
 	}
 	return nil
 }
 
 func (a *Agent) Infer(ctx context.Context, conversation []Content) (Content, error) {
+	functionDeclarations := make([]FunctionDeclaration, 0, len(a.tools))
+	for _, t := range a.tools {
+		functionDeclarations = append(functionDeclarations, FunctionDeclaration{
+			Name:        t.Name,
+			Description: t.Description,
+			Parameters:  t.InputSchema,
+		})
+	}
+
 	body, err := json.Marshal(Request{
 		Contents: conversation,
+		Tools:    []Tool{{FunctionDeclarations: functionDeclarations}},
 	})
 	if err != nil {
 		return Content{}, err
@@ -125,11 +146,14 @@ type Content struct {
 }
 
 type Part struct {
-	Text string `json:"text,omitempty"`
+	Text             string            `json:"text,omitempty"`
+	FunctionCall     *FunctionCall     `json:"functionCall,omitempty"`
+	FunctionResponse *FunctionResponse `json:"functionResponse,omitempty"`
 }
 
 type Request struct {
 	Contents []Content `json:"contents"`
+	Tools    []Tool    `json:"tools,omitempty"`
 }
 
 type Response struct {
@@ -147,4 +171,27 @@ type Response struct {
 		Message string `json:"message"`
 		Status  string `json:"status"`
 	} `json:"error,omitempty"`
+}
+
+// Tool related abstractions
+type FunctionDeclaration struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Parameters  map[string]any `json:"parameters"`
+}
+
+type FunctionCall struct {
+	Name string `json:"name"`
+	// Gemini returns args as a JSON object, which flows straight into our
+	// tool functions that unmarshal from json.RawMessage.
+	Args json.RawMessage `json:"args,omitempty"`
+}
+
+type FunctionResponse struct {
+	Name     string         `json:"name"`
+	Response map[string]any `json:"response"`
+}
+
+type Tool struct {
+	FunctionDeclarations []FunctionDeclaration `json:"functionDeclarations"`
 }
