@@ -14,7 +14,7 @@ import (
 
 // Free-tier capable models: gemini-2.5-flash, gemini-2.5-flash-lite.
 // (Pro models require billing.)
-const model = "gemini-2.5-flash"
+const model = "gemini-2.5-flash-lite"
 
 const apiBase = "https://generativelanguage.googleapis.com/v1beta/models/"
 
@@ -32,7 +32,7 @@ func main() {
 		}
 		return scanner.Text(), true
 	}
-	tools := []ToolDefinition{ReadFileTool}
+	tools := []ToolDefinition{ReadFileTool, ListFilesTool, EditFileTool}
 	agent := NewAgent(apiKey, getUserMessage, tools)
 	if err := agent.Run(context.TODO()); err != nil {
 		fmt.Printf("Error: %s\n", err.Error())
@@ -76,10 +76,9 @@ func (a *Agent) Run(ctx context.Context) error {
 		var functionResponses []Part
 		for _, p := range modelOutput.Parts {
 			if strings.TrimSpace(p.Text) != "" {
-				fmt.Printf("> [93m%s[0m: %s\n\n", model, p.Text)
+				fmt.Printf("🧠 [93m%s[0m: %s\n\n", model, p.Text)
 			}
 			if p.FunctionCall != nil {
-				fmt.Println("🔧 Calling " + p.FunctionCall.Name + "()")
 				result := a.executeTool(p.FunctionCall.Name, p.FunctionCall.Args)
 				functionResponses = append(functionResponses, result)
 			}
@@ -98,18 +97,51 @@ func (a *Agent) Run(ctx context.Context) error {
 	return nil
 }
 
-func (a *Agent) executeTool(name string, _ json.RawMessage) Part {
+func (a *Agent) executeTool(name string, args json.RawMessage) Part {
+	if len(args) == 0 {
+		args = json.RawMessage("{}")
+	}
+
+	var toolDef ToolDefinition
+	found := false
+	for _, tool := range a.tools {
+		if tool.Name == name {
+			toolDef = tool
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return Part{
+			FunctionResponse: &FunctionResponse{
+				Name:     name,
+				Response: map[string]any{"error": "tool not found: " + name},
+			},
+		}
+	}
+
+	fmt.Printf("➡ [92m%s[0m: %s\n\n", name, string(args))
+	output, err := toolDef.Function(args)
+	if err != nil {
+		return Part{
+			FunctionResponse: &FunctionResponse{
+				Name:     name,
+				Response: map[string]any{"error": err.Error()},
+			},
+		}
+	}
+
 	return Part{
 		FunctionResponse: &FunctionResponse{
 			Name:     name,
-			Response: map[string]any{"result": "hello, world!"},
+			Response: map[string]any{"result": output},
 		},
 	}
-
 }
 
 func (a *Agent) Infer(ctx context.Context, conversation []Content) (Content, error) {
-	fmt.Println("🧠 Calling LLM")
+	fmt.Println("➡️  Calling LLM")
 	functionDeclarations := make([]FunctionDeclaration, 0, len(a.tools))
 	for _, t := range a.tools {
 		functionDeclarations = append(functionDeclarations, FunctionDeclaration{

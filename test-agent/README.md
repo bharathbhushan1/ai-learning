@@ -20,6 +20,9 @@ A minimal Go skeleton for a CLI-based agent that reads user input from stdin. Ba
 - `tool.go` defines `ToolDefinition`: a `Name`, `Description`, JSON-schema `InputSchema` (`map[string]any`), and a `Function` (`func(json.RawMessage) (string, error)`) that executes the tool.
 - Tool-related wire types live in `main.go`: `FunctionDeclaration` (sent to Gemini), `FunctionCall` (the model's request, with `Args` as `json.RawMessage`), `FunctionResponse` (a tool result), and `Tool` (a list of `FunctionDeclarations`).
 - `tool_read_file.go` implements `ReadFileTool` (`read_file`): it takes a relative `path` and returns the file's contents via `os.ReadFile`.
+- `tool_list_files.go` implements `ListFilesTool` (`list_files`): it takes an optional `path` (defaulting to the current directory) and returns a JSON array of the files and directories beneath it, walking the tree with `filepath.Walk` and suffixing directory entries with `/`.
+- `tool_edit_file.go` implements `EditFileTool` (`edit_file`): it takes a `path`, `old_str`, and `new_str`, replacing `old_str` with `new_str` in the file. If the file doesn't exist and `old_str` is empty it creates the file (and any parent directories) via `createNewFile`; it errors when `old_str` and `new_str` match or when `old_str` isn't found.
+- `main()` registers all three tools (`ReadFileTool`, `ListFilesTool`, `EditFileTool`).
 
 ## Changelog
 
@@ -32,3 +35,4 @@ A minimal Go skeleton for a CLI-based agent that reads user input from stdin. Ba
 - `2026-06-26` — Parse the Gemini API response into the returned `Content`, handling API errors and empty candidates
 - `2026-06-28` — Add tool support (`ToolDefinition`, function-call wire types) and wire the `read_file` tool into the agent
 - `2026-06-28` — Execute requested tools in the loop via a stubbed `executeTool`, feeding `function` responses back so the model can continue without new user input
+- `2026-06-28` — Add `list_files` and `edit_file` tools (`tool_list_files.go`, `tool_edit_file.go`) and register them in `main`
