@@ -22,11 +22,11 @@ A minimal Go skeleton for a CLI-based agent that reads user input from stdin. Ba
 
 ## Changelog
 
-- `6f5e1ed` — Add initial Go agent skeleton (main.go, go.mod)
-- `eb92cd0` — Add README documenting main.go and a commit changelog
-- `6e22698` — Make Agent.Run return an error and handle it in main
-- Move Go sources into `test-agent/`
-- Add conversation loop with `Content`/`Part` types, a stubbed `Infer`, and `GEMINI_API_KEY`-based config
-- Wire `Infer` up to call the real Gemini `generateContent` API
-- Parse the Gemini API response into the returned `Content`, handling API errors and empty candidates
-- Add tool support (`ToolDefinition`, function-call wire types) and wire the `read_file` tool into the agent
+- `2026-06-26` — `6f5e1ed` — Add initial Go agent skeleton (main.go, go.mod)
+- `2026-06-26` — `eb92cd0` — Add README documenting main.go and a commit changelog
+- `2026-06-26` — `6e22698` — Make Agent.Run return an error and handle it in main
+- `2026-06-26` — Move Go sources into `test-agent/`
+- `2026-06-26` — Add conversation loop with `Content`/`Part` types, a stubbed `Infer`, and `GEMINI_API_KEY`-based config
+- `2026-06-26` — Wire `Infer` up to call the real Gemini `generateContent` API
+- `2026-06-26` — Parse the Gemini API response into the returned `Content`, handling API errors and empty candidates
+- `2026-06-28` — Add tool support (`ToolDefinition`, function-call wire types) and wire the `read_file` tool into the agent
