@@ -32,12 +32,17 @@ MODEL = "sarvam-30b"
 
 API_URL = "https://api.sarvam.ai/v1/chat/completions"
 
-# Keep translations going through the dedicated tool rather than the chat
-# model's own knowledge, and report its output as-is.
-SYSTEM_PROMPT = (
-    "You are Sudarshana, a helpful assistant. When the user asks for a "
-    "translation, use the `translate` tool and report the `translated_text` "
-    "it returns verbatim, rather than translating in your own words."
+SYSTEM_PROMPT = "You are Sudarshana, a helpful assistant."
+
+# The dedicated translate tool costs ~₹20/10K chars vs ~₹10/1M output tokens for
+# inline chat translation — a ~100x premium that's only worth it for low-resource
+# languages or when its controls (mode/script/gender) are needed. So it's off by
+# default; set ENABLE_TRANSLATE_TOOL=1 to advertise it to the model. When it's
+# enabled we steer the model toward it; otherwise the chat model translates inline.
+TRANSLATE_TOOL_PROMPT = (
+    " When the user asks for a translation, use the `translate` tool and report "
+    "the `translated_text` it returns verbatim, rather than translating in your "
+    "own words."
 )
 
 
@@ -49,8 +54,11 @@ class Agent:
         self.client = httpx.Client(timeout=120.0)
 
     def run(self) -> None:
+        system_prompt = SYSTEM_PROMPT
+        if any(t.name == "translate" for t in self.tools):
+            system_prompt += TRANSLATE_TOOL_PROMPT
         conversation: list[dict[str, Any]] = [
-            {"role": "system", "content": SYSTEM_PROMPT}
+            {"role": "system", "content": system_prompt}
         ]
         read_user_input = True
 
@@ -176,7 +184,10 @@ def main() -> None:
             return "", False
         return line.rstrip("\n"), True
 
-    tools = [ReadFileTool, ListFilesTool, EditFileTool, TranslateTool]
+    tools = [ReadFileTool, ListFilesTool, EditFileTool]
+    # Opt-in only: the translate tool is expensive (see TRANSLATE_TOOL_PROMPT).
+    if os.getenv("ENABLE_TRANSLATE_TOOL"):
+        tools.append(TranslateTool)
     agent = Agent(api_key, get_user_message, tools)
     try:
         agent.run()

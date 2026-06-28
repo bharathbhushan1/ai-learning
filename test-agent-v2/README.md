@@ -28,7 +28,8 @@ the wire format is the standard OpenAI chat shape rather than Gemini's
 ```sh
 cd test-agent-v2
 uv sync
-export SARVAM_API_KEY=...   # your Sarvam subscription key
+export SARVAM_API_KEY=...        # your Sarvam subscription key
+export ENABLE_TRANSLATE_TOOL=1   # optional; opt in to the translate tool (see below)
 ```
 
 ## Run
@@ -48,9 +49,10 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
   `tool_calls`. Each tool result is appended as a `tool` message and the loop
   re-infers (without reading stdin) so the model can act on the output;
   otherwise it reads the next user line. EOF exits. The conversation is
-  seeded with a system prompt that steers translation requests through the
-  `translate` tool and asks the model to report its `translated_text`
-  verbatim rather than paraphrasing.
+  seeded with a system prompt; when the `translate` tool is enabled (see
+  below) the prompt steers translation requests through it and asks the
+  model to report `translated_text` verbatim, otherwise the chat model
+  translates inline.
   - `Agent.infer()` builds the OpenAI `tools` array from the registered tools,
     POSTs the conversation to Sarvam's `/v1/chat/completions` with
     `Authorization: Bearer`, surfaces API/HTTP errors, and returns the first
@@ -77,6 +79,11 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
   the chat path lacks. The source language must be given explicitly
   (`sarvam-translate:v1` rejects `auto`); results are serialized with
   `ensure_ascii=False` so native-script output reaches the model intact.
+  **Disabled by default**: the dedicated model costs ~₹20/10K characters
+  versus ~₹10/1M output tokens for inline chat translation — a ~100x premium
+  only worth paying for low-resource languages or when its controls are
+  needed. Set `ENABLE_TRANSLATE_TOOL=1` to advertise it to the model;
+  otherwise the chat model (which is itself multilingual) translates directly.
 
 ## Changelog
 
@@ -95,3 +102,7 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
 - `2026-06-28` — Require an explicit `source_language_code` (Sarvam's translate
   model rejects `auto`) and serialize tool results with `ensure_ascii=False` so
   native-script output survives intact.
+- `2026-06-28` — Gate the `translate` tool behind `ENABLE_TRANSLATE_TOOL`
+  (off by default): the dedicated model is ~100x pricier per character than
+  inline chat translation, so opt in only when its quality/controls are worth
+  it. The translation system prompt is applied only when the tool is enabled.
