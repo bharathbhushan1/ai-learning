@@ -74,7 +74,9 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
   (`sarvam-translate:v1`). Unlike the chat loop it authenticates with the
   `api-subscription-key` header and reads `SARVAM_API_KEY` itself. Exposes
   optional `mode` (formal/colloquial/code-mixed) and `output_script` controls
-  the chat path lacks.
+  the chat path lacks. The source language must be given explicitly
+  (`sarvam-translate:v1` rejects `auto`); results are serialized with
+  `ensure_ascii=False` so native-script output reaches the model intact.
 
 ## Changelog
 
@@ -90,3 +92,6 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
   paraphrased.
 - `2026-06-28` — Log each tool call, its result (or error), and every LLM call
   to the console for easier debugging.
+- `2026-06-28` — Require an explicit `source_language_code` (Sarvam's translate
+  model rejects `auto`) and serialize tool results with `ensure_ascii=False` so
+  native-script output survives intact.

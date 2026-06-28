@@ -30,8 +30,10 @@ TRANSLATE_URL = "https://api.sarvam.ai/translate"
 TRANSLATE_MODEL = "sarvam-translate:v1"
 
 # Supported language codes (BCP-47-ish), e.g. kn-IN for Kannada.
+# Note: sarvam-translate:v1 rejects "auto" ("Invalid language code 'auto'."), so
+# the source must be an explicit code. The chat model identifies it reliably.
 LANGUAGE_CODES = [
-    "auto", "en-IN", "hi-IN", "bn-IN", "gu-IN", "kn-IN", "ml-IN", "mr-IN",
+    "en-IN", "hi-IN", "bn-IN", "gu-IN", "kn-IN", "ml-IN", "mr-IN",
     "od-IN", "pa-IN", "ta-IN", "te-IN", "as-IN", "brx-IN", "doi-IN", "kok-IN",
     "ks-IN", "mai-IN", "mni-IN", "ne-IN", "sa-IN", "sat-IN", "sd-IN", "ur-IN",
 ]
@@ -44,7 +46,7 @@ def translate(args: dict[str, Any]) -> str:
 
     body: dict[str, Any] = {
         "input": args["input"],
-        "source_language_code": args.get("source_language_code", "auto"),
+        "source_language_code": args["source_language_code"],
         "target_language_code": args["target_language_code"],
         "model": TRANSLATE_MODEL,
     }
@@ -66,16 +68,22 @@ def translate(args: dict[str, Any]) -> str:
     try:
         data = resp.json()
     except ValueError:
-        return json.dumps({"error": f"translate returned {resp.status_code}: {resp.text}"})
+        return json.dumps(
+            {"error": f"translate returned {resp.status_code}: {resp.text}"},
+            ensure_ascii=False,
+        )
 
     if resp.status_code != 200:
-        return json.dumps({"error": data})
+        return json.dumps({"error": data}, ensure_ascii=False)
 
     return json.dumps(
         {
             "translated_text": data.get("translated_text", ""),
             "source_language_code": data.get("source_language_code"),
-        }
+        },
+        # ensure_ascii=False so native-script output (e.g. Kannada) is passed back
+        # to the model as real characters, not \uXXXX escapes it would echo verbatim.
+        ensure_ascii=False,
     )
 
 
@@ -86,7 +94,8 @@ TranslateTool = ToolDefinition(
         "dedicated translation model. Use this for accurate, controllable "
         "translation rather than translating in your own reply. Language codes "
         "are BCP-47 style, e.g. 'en-IN' (English), 'kn-IN' (Kannada), "
-        "'hi-IN' (Hindi). Use 'auto' as the source to auto-detect."
+        "'hi-IN' (Hindi). Identify the source language yourself and pass it "
+        "explicitly; there is no auto-detect."
     ),
     input_schema={
         "type": "object",
@@ -98,11 +107,11 @@ TranslateTool = ToolDefinition(
             "source_language_code": {
                 "type": "string",
                 "enum": LANGUAGE_CODES,
-                "description": "Source language code, or 'auto' to detect. Defaults to 'auto'.",
+                "description": "Source language code of the input text, e.g. 'en-IN'.",
             },
             "target_language_code": {
                 "type": "string",
-                "enum": [c for c in LANGUAGE_CODES if c != "auto"],
+                "enum": LANGUAGE_CODES,
                 "description": "Target language code, e.g. 'kn-IN' for Kannada.",
             },
             "mode": {
@@ -116,7 +125,7 @@ TranslateTool = ToolDefinition(
                 "description": "Script of the output. Optional; defaults to native script.",
             },
         },
-        "required": ["input", "target_language_code"],
+        "required": ["input", "source_language_code", "target_language_code"],
     },
     function=translate,
 )

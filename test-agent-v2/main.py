@@ -104,7 +104,12 @@ class Agent:
 
     @staticmethod
     def _tool_result(call_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-        return {"role": "tool", "tool_call_id": call_id, "content": json.dumps(payload)}
+        return {
+            "role": "tool",
+            "tool_call_id": call_id,
+            # ensure_ascii=False so non-Latin scripts reach the model intact.
+            "content": json.dumps(payload, ensure_ascii=False),
+        }
 
     def infer(self, conversation: list[dict[str, Any]]) -> dict[str, Any]:
         tools = [
