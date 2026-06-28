@@ -25,6 +25,7 @@ from tool import ToolDefinition
 from tool_edit_file import EditFileTool
 from tool_list_files import ListFilesTool
 from tool_read_file import ReadFileTool
+from tool_translate import TranslateTool
 
 # Sarvam's OpenAI-compatible chat model.
 MODEL = "sarvam-30b"
@@ -156,7 +157,7 @@ def main() -> None:
             return "", False
         return line.rstrip("\n"), True
 
-    tools = [ReadFileTool, ListFilesTool, EditFileTool]
+    tools = [ReadFileTool, ListFilesTool, EditFileTool, TranslateTool]
     agent = Agent(api_key, get_user_message, tools)
     try:
         agent.run()
