@@ -64,6 +64,12 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
 - `tool_edit_file.py` — `edit_file`: replaces `old_str` with `new_str` in a
   file. Creates the file (and parent dirs) when it doesn't exist and `old_str`
   is empty; errors when `old_str` equals `new_str` or isn't found.
+- `tool_translate.py` — `translate`: translates text between Indian languages
+  (and English) via Sarvam's dedicated `POST /translate` model
+  (`sarvam-translate:v1`). Unlike the chat loop it authenticates with the
+  `api-subscription-key` header and reads `SARVAM_API_KEY` itself. Exposes
+  optional `mode` (formal/colloquial/code-mixed) and `output_script` controls
+  the chat path lacks.
 
 ## Changelog
 
@@ -71,3 +77,6 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
   OpenAI-compatible chat completions API, managed with uv.
 - `2026-06-28` — Switch model to `sarvam-30b` (`sarvam-m` is deprecated);
   tool calling confirmed working with `Authorization: Bearer` auth.
+- `2026-06-28` — Add the `translate` tool, calling Sarvam's dedicated
+  `/translate` endpoint (`sarvam-translate:v1`) with the `api-subscription-key`
+  header.
