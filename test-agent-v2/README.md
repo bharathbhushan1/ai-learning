@@ -47,7 +47,10 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
   `Agent.infer()` for the assistant reply, print any text, and run any
   `tool_calls`. Each tool result is appended as a `tool` message and the loop
   re-infers (without reading stdin) so the model can act on the output;
-  otherwise it reads the next user line. EOF exits.
+  otherwise it reads the next user line. EOF exits. The conversation is
+  seeded with a system prompt that steers translation requests through the
+  `translate` tool and asks the model to report its `translated_text`
+  verbatim rather than paraphrasing.
   - `Agent.infer()` builds the OpenAI `tools` array from the registered tools,
     POSTs the conversation to Sarvam's `/v1/chat/completions` with
     `Authorization: Bearer`, surfaces API/HTTP errors, and returns the first
@@ -80,3 +83,6 @@ reply, calling tools as needed. Ctrl-D (EOF) exits.
 - `2026-06-28` — Add the `translate` tool, calling Sarvam's dedicated
   `/translate` endpoint (`sarvam-translate:v1`) with the `api-subscription-key`
   header.
+- `2026-06-28` — Seed a system prompt so translation requests go through the
+  `translate` tool and its `translated_text` is reported verbatim rather than
+  paraphrased.

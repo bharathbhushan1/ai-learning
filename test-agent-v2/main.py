@@ -32,6 +32,14 @@ MODEL = "sarvam-30b"
 
 API_URL = "https://api.sarvam.ai/v1/chat/completions"
 
+# Keep translations going through the dedicated tool rather than the chat
+# model's own knowledge, and report its output as-is.
+SYSTEM_PROMPT = (
+    "You are Sudarshana, a helpful assistant. When the user asks for a "
+    "translation, use the `translate` tool and report the `translated_text` "
+    "it returns verbatim, rather than translating in your own words."
+)
+
 
 class Agent:
     def __init__(self, api_key: str, get_user_message, tools: list[ToolDefinition]):
@@ -41,7 +49,9 @@ class Agent:
         self.client = httpx.Client(timeout=120.0)
 
     def run(self) -> None:
-        conversation: list[dict[str, Any]] = []
+        conversation: list[dict[str, Any]] = [
+            {"role": "system", "content": SYSTEM_PROMPT}
+        ]
         read_user_input = True
 
         print("Agent: Sudarshana ☸️ :> ")
