@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## Modules
-Top-level modules in this repo: `test-agent`, `test-agent-v2`.
+Top-level modules in this repo: `test-agent`, `test-agent-v2`, `pomodoro`.
 
 ## Commit conventions
 When committing changes to a module:

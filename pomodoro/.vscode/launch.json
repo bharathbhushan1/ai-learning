@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:pomodoro}",
+            "name": "Debug Pomodoro",
+            "target": "Pomodoro",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug Pomodoro"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:pomodoro}",
+            "name": "Release Pomodoro",
+            "target": "Pomodoro",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release Pomodoro"
+        }
+    ]
+}

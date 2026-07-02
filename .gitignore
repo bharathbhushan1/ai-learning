@@ -11,3 +11,6 @@ wheels/
 
 # Temp folders
 temp/
+
+# macOS
+.DS_Store
